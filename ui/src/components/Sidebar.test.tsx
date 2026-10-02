@@ -300,6 +300,9 @@ describe("Sidebar", () => {
     expect(container.querySelector('[data-testid="sidebar-agents"]')?.getAttribute("data-streamlined")).toBe("undefined");
     expect(container.textContent).toContain("Organization");
     expect(labels).toEqual(expect.arrayContaining(["Org", "Connectors", "Timeline", "Costs", "Activity", "Settings"]));
+    // The policy link sits directly above Settings, the last item in the section.
+    expect(labels.indexOf("Org-wide policy")).toBe(labels.indexOf("Settings") - 1);
+    expect(container.querySelector('a[href="/org-policy"]')).not.toBeNull();
     expect(labels).not.toContain("Audit");
     expect(labels).not.toContain("Projects");
     expect(container.querySelector('a[href="/agents"]')).toBeNull();
@@ -405,7 +408,13 @@ describe("Sidebar", () => {
       .map((anchor) => anchor.textContent?.trim());
 
     expect(labels(workSection)).toEqual(["Tasks", "Projects", "Routines", "Artifacts"]);
-    expect(labels(orgSection)).toEqual(["Agents", "Skills", "Connectors", "Audit"]);
+    expect(labels(orgSection)).toEqual([
+      "Agents",
+      "Skills",
+      "Org-wide policy",
+      "Connectors",
+      "Audit",
+    ]);
     expect(sections.indexOf(workSection!)).toBeLessThan(sections.indexOf(orgSection!));
     expect(
       workSection?.querySelector('a[href="/issues"] svg')?.classList.contains("lucide-circle-check"),

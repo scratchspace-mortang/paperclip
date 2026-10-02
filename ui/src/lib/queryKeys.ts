@@ -215,8 +215,6 @@ export const queryKeys = {
     skills: (id: string) => ["agents", "skills", id] as const,
     instructionsBundle: (id: string) =>
       ["agents", "instructions-bundle", id] as const,
-    instructionCandidates: (id: string) =>
-      ["agents", "instruction-candidates", id] as const,
     instructionsFile: (id: string, relativePath: string) =>
       ["agents", "instructions-bundle", id, "file", relativePath] as const,
     keys: (agentId: string) => ["agents", "keys", agentId] as const,
@@ -601,6 +599,9 @@ export const queryKeys = {
     mine: (companyId: string) =>
       ["inbox-agent-policy", companyId, "me"] as const,
   },
+  orgPolicy: {
+    detail: (companyId: string) => ["org-policy", companyId] as const,
+  },
   sidebarPreferences: {
     companyOrder: (userId: string) =>
       ["sidebar-preferences", "company-order", userId] as const,
@@ -705,6 +706,9 @@ export const queryKeys = {
   liveRuns: (companyId: string) => ["live-runs", companyId] as const,
   runIssues: (runId: string) => ["run-issues", runId] as const,
   org: (companyId: string) => ["org", companyId] as const,
+  orgPolicy: {
+    detail: (companyId: string) => ["org-policy", companyId] as const,
+  },
   skills: {
     available: ["skills", "available"] as const,
   },

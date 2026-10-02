@@ -81,6 +81,7 @@ import { PaperclipCloudOAuthHandoffPage } from "./pages/apps/PaperclipCloudOAuth
 import { GatewaysList } from "./pages/apps/gateways/GatewaysList";
 import { GatewayDetail } from "./pages/apps/gateways/GatewayDetail";
 import { CompanySkills } from "./pages/CompanySkills";
+import { CompanyOrgPolicy } from "./pages/CompanyOrgPolicy";
 import { SkillStudio } from "./pages/SkillStudio";
 import { Secrets } from "./pages/Secrets";
 import { CompanyImport } from "./pages/CompanyImport";
@@ -270,6 +271,7 @@ function boardRoutes(streamlinedUiEnabled: boolean) {
         path="org"
         element={streamlinedUiEnabled ? <Navigate to="/agents/all" replace /> : <ProductionSurface><ProductionOrgChart /></ProductionSurface>}
       />
+      <Route path="org-policy" element={<CompanyOrgPolicy />} />
       <Route path="agents" element={<Navigate to="/agents/all" replace />} />
       {AGENT_FILTER_TABS.map((tab) => (
         <Route
@@ -804,6 +806,7 @@ export function App() {
           <Route path="skills/studio/:skillId" element={<UnprefixedBoardRedirect />} />
           <Route path="skills/:skillId/studio" element={<LegacySkillStudioRedirect />} />
           <Route path="skills/*" element={<UnprefixedBoardRedirect />} />
+          <Route path="org-policy" element={<UnprefixedBoardRedirect />} />
           <Route path="settings" element={<LegacySettingsRedirect />} />
           <Route path="settings/*" element={<LegacySettingsRedirect />} />
           <Route path="agents" element={<UnprefixedBoardRedirect />} />
