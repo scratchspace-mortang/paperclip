@@ -20,6 +20,7 @@ import {
 import {
   isPaperclipExternalChatContractTurn,
   isPaperclipExternalChatQuestionResponseTurn,
+  renderPaperclipOrgPolicyPrompt,
   selectPaperclipPromptSections,
 } from "@paperclipai/adapter-utils/server-utils";
 
@@ -42,6 +43,13 @@ export function buildNativeExecutionInput(input: {
   };
   taskPrompt: string;
   initialCommunicationGuidance?: string | null;
+  /**
+   * The company organization policy for this run, resolved by the caller. This
+   * lane builds a small context instead of receiving the full run context, so
+   * the policy has to be passed in explicitly or the native runner would get no
+   * policy while every other lane gets one.
+   */
+  orgPolicy?: string | null;
   /**
    * The already-sanitized Paperclip wake envelope for this run. Native drivers
    * receive a closed execution input rather than the legacy adapter context,
@@ -66,7 +74,6 @@ export function buildNativeExecutionInput(input: {
   provider?: "codex" | "opencode" | "claude_managed" | "aws_agentcore" | "acpx";
   acpxAgent?: NativeAcpxAgent;
   codexApprovalPolicy?: NativeCodexApprovalPolicy;
-  codexReasoningEffort?: string;
   opencodePermissionMode?: NativeOpenCodePermissionMode;
   acpxPermissionMode?: NativeAcpxPermissionMode;
   model?: string | null;
@@ -160,6 +167,7 @@ export function buildNativeExecutionInput(input: {
   const { taskContextNote, wakePrompt } = selectPaperclipPromptSections({
     paperclipTaskMarkdownAssignment: input.taskPrompt,
     paperclipWake: wakePayload,
+    paperclipOrgPolicy: undefined,
     conversationMode: input.conversationMode,
   }, {
     resumedSession: false,
@@ -194,6 +202,10 @@ export function buildNativeExecutionInput(input: {
         previousIssue: input.previousTurn.task,
         allowExternalChat: true,
         issue: input.issue,
+        // The compact envelope replaces the full bootstrap prompt, so the
+        // current policy has to travel on it or a resumed run keeps obeying the
+        // policy the retained session started with.
+        orgPolicySection: renderPaperclipOrgPolicyPrompt(input.orgPolicy ?? ""),
       }),
     } : {}),
     executionMode,
@@ -282,7 +294,6 @@ export function buildNativeExecutionInput(input: {
             kind: "codex",
             model: input.model ?? null,
             approvalPolicy: input.codexApprovalPolicy ?? "never",
-            ...(input.codexReasoningEffort ? { reasoningEffort: input.codexReasoningEffort } : {}),
           },
     completionContract: {
       id: input.completionContract.id,

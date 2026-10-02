@@ -4,6 +4,7 @@ import type { ExecutionContinuationEnvelope, AskUserQuestionsInteraction } from 
 import { formatDurableQuestionResponseSummary } from "../question-response-delivery.js";
 import { nativeCompletionSource, buildNativeCompletionContract } from "./completion-contracts.js";
 import { renderPaperclipWakePrompt } from "@paperclipai/adapter-utils/server-utils";
+import { buildNativeModelEnvelope } from "@paperclipai/paperclip-runner";
 import { buildNativeExecutionInput } from "./native-execution-input.js";
 import { nativeRuntimeContextFixture } from "./runtime-context.test-fixture.js";
 
@@ -18,14 +19,11 @@ describe("LCA-05 explicit native work mode", () => {
         taskPrompt: text,
         workspace: { id: "50000000-0000-4000-8000-000000000005", cwd: "/workspace", repoUrl: null, repoRef: null, branchName: null },
         normalizedSessionId: null,
-        provider: "codex",
-        codexReasoningEffort: "high",
         planningContext: workMode === "planning" ? { documentId: null, baseRevisionId: null, baseRevisionNumber: 0, markdown: "", sha256: "a".repeat(64), reviewContext: {} } : null,
         completionContract: { id: "70000000-0000-4000-8000-000000000007", sha256: `sha256:${"a".repeat(64)}`, schemaVersion: "paperclip.run-result.v1", contract: { revision: "1", objective: "Deliver the requested work", criteria: [{ id: "output", requirement: "Deliver the requested work" }] } },
         runtimeContext: nativeRuntimeContextFixture(),
       });
       expect(input.task.workMode).toBe(workMode);
-      expect(input.provider).toMatchObject({ kind: "codex", reasoningEffort: "high" });
       expect(input.executionMode).toBe(workMode === "planning" ? "plan" : "default");
       expect(input.task.title).toBe(text);
     }
@@ -546,6 +544,153 @@ describe("follow-up context size", () => {
     expect(JSON.stringify(contract)).not.toContain(oldBody);
     expect(JSON.stringify(contract)).not.toContain(answerText);
     expect(resumed.length + JSON.stringify(contract).length).toBeLessThan(fresh.length);
+  });
+});
+
+
+describe("native execution input company org policy", () => {
+  const policy = "Never open a pull request. Never push. Ask before deleting a row.";
+  const args: Parameters<typeof buildNativeExecutionInput>[0] = {
+    companyId: "10000000-0000-4000-8000-000000000001",
+    runId: "50000000-0000-4000-8000-000000000005",
+    agentId: "30000000-0000-4000-8000-000000000003",
+    issue: {
+      id: "20000000-0000-4000-8000-000000000002",
+      identifier: "POL-1",
+      title: "Ship the release note",
+      description: "Write the release note.",
+      workMode: "standard",
+    },
+    taskPrompt: "Paperclip task context:\n- Title: Ship the release note",
+    wakePayload: {
+      reason: "issue_commented",
+      issue: { id: "20000000-0000-4000-8000-000000000002", workMode: "standard" },
+      commentIds: ["comment-1"],
+      latestCommentId: "comment-1",
+      comments: [{ id: "comment-1", body: "Please include the migration note." }],
+      commentWindow: { requestedCount: 1, includedCount: 1, missingCount: 0 },
+      fallbackFetchNeeded: false,
+    },
+    workspace: {
+      id: "40000000-0000-4000-8000-000000000004",
+      cwd: "/workspace",
+      repoUrl: null,
+      repoRef: null,
+      branchName: null,
+    },
+    normalizedSessionId: null,
+    provider: "codex",
+    completionContract: {
+      id: "70000000-0000-4000-8000-000000000007",
+      sha256: `sha256:${"a".repeat(64)}`,
+      schemaVersion: "paperclip.run-result.v1",
+      contract: {
+        revision: "1",
+        objective: "Ship the release note",
+        criteria: [{ id: "objective", requirement: "Include the migration note." }],
+      },
+    },
+    runtimeContext: nativeRuntimeContextFixture(),
+  };
+
+  it.each([false, true])(
+    "prepends the company policy to the task prompt (resumed: %s)",
+    (resumedSession) => {
+      const input = buildNativeExecutionInput({
+        ...args,
+        orgPolicy: policy,
+        resumedSession,
+        normalizedSessionId: resumedSession
+          ? "60000000-0000-4000-8000-000000000006"
+          : null,
+      });
+      expect(input.task.prompt).toContain("## Organization policy");
+      expect(input.task.prompt).toContain(policy);
+      // The policy leads the prompt, so it is read before the agent decides what
+      // this turn's work is.
+      expect(input.task.prompt.indexOf("## Organization policy")).toBe(0);
+      expect(input.task.prompt.indexOf(policy)).toBeLessThan(
+        input.task.prompt.indexOf("## Paperclip Wake Payload"),
+      );
+      // A policy must not displace the task itself.
+      expect(input.task.prompt).toContain("Ship the release note");
+    },
+  );
+
+  it.each([undefined, null, "", "   "])(
+    "leaves the runner input unchanged when the field carries no policy (%j)",
+    (orgPolicy) => {
+      const withoutPolicy = buildNativeExecutionInput(args);
+      const input = buildNativeExecutionInput({ ...args, orgPolicy });
+      expect(input).toEqual(withoutPolicy);
+      expect(input.task.prompt).not.toContain("## Organization policy");
+    },
+  );
+
+  it("carries the current policy on the compact continuation a resumed turn actually sends", () => {
+    // A real resume: a matching previousTurn plus a resumeDelta based on it.
+    // This is the path where the runner sends the continuation instead of
+    // task.prompt, so task.prompt cannot be where the policy has to appear.
+    const newComment = {
+      id: "comment-2",
+      body: "Please include the migration note.",
+      authorType: "user",
+      authorId: "user-1",
+      createdAt: "2026-09-17T00:00:00Z",
+      updatedAt: "2026-09-17T00:00:00Z",
+      deleted: false,
+      sourceTrust: "human",
+    };
+    const continuation: ExecutionContinuationEnvelope = {
+      version: 1,
+      companyId: args.companyId,
+      issueId: args.issue.id,
+      objective: "Ship the release note",
+      trigger: { reason: "issue_commented", interactionId: null, sourceRunId: null },
+      originCommentIds: [newComment.id],
+      messages: [newComment],
+      resumeDelta: { baseRunId: "60000000-0000-4000-8000-000000000006", messages: [newComment] },
+      humanResponses: [],
+      interactionOutcomes: [],
+      completedWork: null,
+      unresolvedInteractionIds: [],
+      coverage: { kind: "full_task_history", throughCommentId: newComment.id, summaryThroughCommentId: null },
+    };
+    const input = buildNativeExecutionInput({
+      ...args,
+      orgPolicy: "Policy revision two: report in metric units.",
+      resumedSession: true,
+      normalizedSessionId: "60000000-0000-4000-8000-000000000006",
+      previousTurn: {
+        runId: "60000000-0000-4000-8000-000000000006",
+        task: { title: args.issue.title, description: args.issue.description },
+      },
+      wakePayload: {
+        reason: "issue_commented",
+        issue: { id: args.issue.id, workMode: "standard" },
+        commentIds: [newComment.id],
+        latestCommentId: newComment.id,
+        comments: [newComment],
+        commentWindow: { requestedCount: 1, includedCount: 1, missingCount: 0 },
+        fallbackFetchNeeded: false,
+        executionContinuation: continuation,
+      },
+    });
+
+    // Assert the compact path is really selected, not a full-prompt fallback.
+    const envelope = buildNativeModelEnvelope(input, { resumedSession: true });
+    expect(envelope.schema).toBe("paperclip.native-continuation.v1");
+    const events = JSON.parse(
+      "events" in envelope ? envelope.events : "{}",
+    ) as { organizationPolicy?: string; messages: unknown[] };
+    expect(events.messages).toHaveLength(1);
+    // Default to "" so a missing key fails as a named content mismatch rather
+    // than as an assertion-type error.
+    const organizationPolicy = events.organizationPolicy ?? "";
+    expect(organizationPolicy).toContain("## Organization policy");
+    expect(organizationPolicy).toContain("Policy revision two: report in metric units.");
+    // A policy swap must reach the turn, not just the original session.
+    expect(organizationPolicy).not.toContain(policy);
   });
 });
 
