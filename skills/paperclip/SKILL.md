@@ -491,7 +491,7 @@ Authorized managers can install company skills independently of hiring, then ass
 - When hiring or creating an agent, include optional `desiredSkills` so the same assignment model is applied on day one.
 
 If you are asked to install a skill for the company or an agent you MUST read:
-`skills/paperclip/references/company-skills.md`
+`references/company-skills.md`
 
 ## Routines
 
@@ -502,21 +502,21 @@ Routines are recurring tasks. Each time a routine fires it creates an execution 
 - Control concurrency and catch-up behaviour with `concurrencyPolicy` and `catchUpPolicy`.
 
 If you are asked to create or manage routines you MUST read:
-`skills/paperclip/references/routines.md`
+`references/routines.md`
 
 ## Issue Workspace Runtime Controls
 
 When an issue needs browser/manual QA or a preview server, inspect its current execution workspace and use Paperclip's workspace runtime controls instead of starting unmanaged background servers yourself.
 
 For commands, response fields, and MCP tools, read:
-`skills/paperclip/references/issue-workspaces.md`
+`references/issue-workspaces.md`
 
 ## Proposing Credentials Safely
 
 **When you receive a credential, propose it as a Paperclip secret immediately with `POST /api/agents/me/secret-proposals`. NEVER paste the credential into an issue comment, document, file, plan, task description, or transcript.** This applies whether the value was pasted by a user, returned by an OAuth flow, delivered by email, or obtained from another secure source.
 
 Before proposing a credential you MUST read the "Agent secret proposals" section in:
-`skills/paperclip/references/api-reference.md`
+`references/api-reference.md`
 
 ## Reading Granted Secrets
 

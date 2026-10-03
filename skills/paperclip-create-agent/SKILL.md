@@ -73,10 +73,10 @@ This is the single most important decision for hire quality. Pick exactly one pa
 - **Generic fallback** — no template is close. Use the baseline role guide to construct a new `AGENTS.md` from scratch, filling in each recommended section for the specific role.
 
 Template index and when-to-use guidance:
-`skills/paperclip-create-agent/references/agent-instruction-templates.md`
+`references/agent-instruction-templates.md`
 
 Generic fallback for no-template hires:
-`skills/paperclip-create-agent/references/baseline-role-guide.md`
+`references/baseline-role-guide.md`
 
 State which path you took in your hire-request comment so the board can see the reasoning.
 
@@ -107,7 +107,7 @@ curl -sS "$PAPERCLIP_API_URL/llms/agent-icons.txt" \
 ### 7. Review the draft against the quality checklist
 
 Before submitting, walk the draft-review checklist end-to-end and fix any item that does not pass:
-`skills/paperclip-create-agent/references/draft-review-checklist.md`
+`references/draft-review-checklist.md`
 
 ### 8. Submit hire request
 
@@ -172,8 +172,10 @@ For each linked issue, either:
 
 ## References
 
-- Template index and how to apply a template: `skills/paperclip-create-agent/references/agent-instruction-templates.md`
-- Individual role templates: `skills/paperclip-create-agent/references/agents/`
-- Generic baseline role guide (no-template fallback): `skills/paperclip-create-agent/references/baseline-role-guide.md`
-- Pre-submit draft-review checklist: `skills/paperclip-create-agent/references/draft-review-checklist.md`
-- Endpoint payload shapes and full examples: `skills/paperclip-create-agent/references/api-reference.md`
+Each name below is bundle-relative, so it resolves against the directory holding this SKILL.md.
+
+- Template index and how to apply a template: `references/agent-instruction-templates.md`
+- Individual role templates: `references/agents/`
+- Generic baseline role guide (no-template fallback): `references/baseline-role-guide.md`
+- Pre-submit draft-review checklist: `references/draft-review-checklist.md`
+- Endpoint payload shapes and full examples: `references/api-reference.md`
